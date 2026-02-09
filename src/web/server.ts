@@ -20,16 +20,19 @@ import express from "express";
 import { resolve, join } from "node:path";
 import { readFileSync, existsSync } from "node:fs";
 import { loadConfig, type AppConfig } from "../config";
-import { detectFoundryService, formatServiceInfo } from "../service/detect";
-import { fetchModelCatalog, type FoundryModel } from "../models/catalog";
+import { detectFoundryService, autoDetectFoundryService, formatServiceInfo } from "../service/detect";
+import { fetchModelCatalog, autoFetchModelCatalog, type FoundryModel } from "../models/catalog";
+import { resolveModelId } from "../models/resolver";
 import { runNonStreamingProbe } from "../probes/non-streaming";
 import { runRawStreamingProbe } from "../probes/raw-streaming";
 import { runCopilotSdkStreamingProbe } from "../probes/copilot-sdk-streaming";
+import { runFoundrySDKProbe, runFoundrySDKStreamingProbe } from "../probes/foundry-sdk";
 import { writeReport, printSummary } from "../report";
 import { testNonStreaming, testStreaming } from "../benchmark/runner";
 import type { ProbeResult } from "../types";
 import type { ModelBenchmarkEntry, BenchmarkReport } from "../benchmark/types";
 import { writeFileSync } from "node:fs";
+import { getVersionInfo, type VersionInfo } from "../utils/version";
 
 const app = express();
 app.use(express.json());
@@ -54,11 +57,34 @@ function ensureConfig(): AppConfig {
   return cfg;
 }
 
+/**
+ * Resolve a model alias to the full HTTP model ID.
+ * Uses the HTTP /v1/models endpoint (which lists only loaded models)
+ * because the HTTP chat API only accepts these variant IDs.
+ */
+async function resolveModel(model: string): Promise<string> {
+  try {
+    const c = ensureConfig();
+    const baseUrl = c.foundryBaseUrl;
+    if (!baseUrl) return model;
+
+    const models = await fetchModelCatalog(baseUrl, c.foundryApiKey, c.requestTimeoutMs);
+    const { resolvedId, wasResolved } = resolveModelId(model, models);
+    if (wasResolved) {
+      console.log(`  ℹ  Resolved model alias "${model}" → "${resolvedId}"`);
+    }
+    return resolvedId;
+  } catch {
+    return model;
+  }
+}
+
 async function ensureBaseUrl(): Promise<string> {
   const c = ensureConfig();
 
   // Always re-detect – service port can change after restart
-  const svc = detectFoundryService(c.requestTimeoutMs);
+  // Try SDK first, fall back to CLI
+  const svc = await autoDetectFoundryService(c.requestTimeoutMs);
   if (svc.running && svc.baseUrl) {
     c.foundryBaseUrl = svc.baseUrl;
     return c.foundryBaseUrl;
@@ -72,19 +98,33 @@ async function ensureBaseUrl(): Promise<string> {
 
 // ── API: Service status ──────────────────────────────────
 
-app.get("/api/status", (_req, res) => {
+app.get("/api/status", async (_req, res) => {
   try {
     const c = ensureConfig();
-    const svc = detectFoundryService(c.requestTimeoutMs);
+    const svc = await autoDetectFoundryService(c.requestTimeoutMs);
 
     if (svc.running && svc.baseUrl && !c.foundryBaseUrl) {
       c.foundryBaseUrl = svc.baseUrl;
     }
 
+    const versions = getVersionInfo(svc.detectedVia ?? "unknown");
+
     res.json({
       ...svc,
       configuredBaseUrl: c.foundryBaseUrl,
+      versions,
     });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// ── API: Version info ────────────────────────────────────
+
+app.get("/api/version", (_req, res) => {
+  try {
+    const versions = getVersionInfo();
+    res.json(versions);
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
@@ -96,7 +136,7 @@ app.get("/api/models", async (_req, res) => {
   try {
     const baseUrl = await ensureBaseUrl();
     const c = ensureConfig();
-    const models = await fetchModelCatalog(baseUrl, c.foundryApiKey, c.requestTimeoutMs);
+    const models = await autoFetchModelCatalog(baseUrl, c.foundryApiKey, c.requestTimeoutMs);
     res.json({ models });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
@@ -112,7 +152,7 @@ app.post("/api/probes/all", async (req, res) => {
 
     await ensureBaseUrl();
     const c = ensureConfig();
-    c.foundryModel = model;
+    c.foundryModel = await resolveModel(model);
 
     const results: ProbeResult[] = [];
 
@@ -155,6 +195,32 @@ app.post("/api/probes/all", async (req, res) => {
       });
     }
 
+    // Probe 4a – Foundry SDK (non-streaming)
+    try {
+      results.push(await runFoundrySDKProbe(c));
+    } catch (err) {
+      results.push({
+        probe: "foundry-sdk",
+        outcome: "ERROR",
+        timings: { startMs: Date.now(), endMs: Date.now(), totalMs: 0 },
+        error: String(err),
+        payloadHash: "unknown",
+      });
+    }
+
+    // Probe 4b – Foundry SDK (streaming)
+    try {
+      results.push(await runFoundrySDKStreamingProbe(c));
+    } catch (err) {
+      results.push({
+        probe: "foundry-sdk-streaming",
+        outcome: "ERROR",
+        timings: { startMs: Date.now(), endMs: Date.now(), totalMs: 0 },
+        error: String(err),
+        payloadHash: "unknown",
+      });
+    }
+
     const report = writeReport(c, results);
     printSummary(report);
 
@@ -173,7 +239,7 @@ app.post("/api/probe/:name", async (req, res) => {
 
     await ensureBaseUrl();
     const c = ensureConfig();
-    c.foundryModel = model;
+    c.foundryModel = await resolveModel(model);
 
     let result: ProbeResult;
     const name = req.params.name;
@@ -187,6 +253,12 @@ app.post("/api/probe/:name", async (req, res) => {
         break;
       case "copilot-sdk":
         result = await runCopilotSdkStreamingProbe(c);
+        break;
+      case "foundry-sdk":
+        result = await runFoundrySDKProbe(c);
+        break;
+      case "foundry-sdk-streaming":
+        result = await runFoundrySDKStreamingProbe(c);
         break;
       default:
         return res.status(400).json({ error: `Unknown probe: ${name}` });
@@ -205,7 +277,7 @@ app.post("/api/benchmark", async (_req, res) => {
     const baseUrl = await ensureBaseUrl();
     const c = ensureConfig();
 
-    const models = await fetchModelCatalog(baseUrl, c.foundryApiKey, c.requestTimeoutMs);
+    const models = await autoFetchModelCatalog(baseUrl, c.foundryApiKey, c.requestTimeoutMs);
     if (models.length === 0) {
       return res.status(404).json({ error: "No models found in catalog" });
     }

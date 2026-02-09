@@ -11,8 +11,8 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadConfig } from "../config";
-import { detectFoundryService, formatServiceInfo } from "../service/detect";
-import { fetchModelCatalog } from "../models/catalog";
+import { detectFoundryService, autoDetectFoundryService, formatServiceInfo } from "../service/detect";
+import { fetchModelCatalog, autoFetchModelCatalog } from "../models/catalog";
 import { testNonStreaming, testStreaming } from "./runner";
 import type { BenchmarkReport, ModelBenchmarkEntry } from "./types";
 
@@ -29,7 +29,7 @@ async function main(): Promise<void> {
   // ── Auto-detect service if no URL configured ───────────
   if (!cfg.foundryBaseUrl) {
     console.log("  ℹ  Auto-detecting Foundry Local service...\n");
-    const svc = detectFoundryService(cfg.requestTimeoutMs);
+    const svc = await autoDetectFoundryService(cfg.requestTimeoutMs);
     console.log(formatServiceInfo(svc));
     console.log();
 
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   console.log("  📋  Fetching model catalog...\n");
   let modelIds: string[];
   try {
-    const models = await fetchModelCatalog(
+    const models = await autoFetchModelCatalog(
       cfg.foundryBaseUrl,
       cfg.foundryApiKey,
       cfg.requestTimeoutMs,

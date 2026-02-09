@@ -21,7 +21,7 @@ export interface ProbeTimings {
 
 /** Result from any probe */
 export interface ProbeResult {
-  probe: "non-streaming" | "raw-streaming" | "copilot-sdk-streaming";
+  probe: "non-streaming" | "raw-streaming" | "copilot-sdk-streaming" | "foundry-sdk" | "foundry-sdk-streaming";
   outcome: ProbeOutcome;
   /** HTTP status code, if a response was received */
   httpStatus?: number;

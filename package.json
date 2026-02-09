@@ -10,6 +10,7 @@
     "probe:non-streaming": "node dist/probes/non-streaming.js",
     "probe:raw-streaming": "node dist/probes/raw-streaming.js",
     "probe:copilot-sdk": "node dist/probes/copilot-sdk-streaming.js",
+    "probe:foundry-sdk": "node dist/probes/foundry-sdk.js",
     "benchmark": "node dist/benchmark/index.js",
     "web": "node dist/web/server.js",
     "web:dev": "ts-node src/web/server.ts",

@@ -11,6 +11,9 @@
     <div class="header-content">
       <h1>🔍 Foundry Local Streaming Validation</h1>
       <p class="subtitle">Diagnose and validate OpenAI-compatible streaming with Foundry Local</p>
+      <div id="version-bar" class="version-bar">
+        <span class="version-loading">Loading version info...</span>
+      </div>
     </div>
   </header>
 
@@ -51,7 +54,9 @@
           <button class="btn btn-primary" id="btn-run-all" onclick="runAllProbes()" disabled>Run All Probes</button>
           <button class="btn btn-outline" id="btn-probe-ns" onclick="runSingleProbe('non-streaming')" disabled>Non-streaming only</button>
           <button class="btn btn-outline" id="btn-probe-raw" onclick="runSingleProbe('raw-streaming')" disabled>Raw SSE only</button>
-          <button class="btn btn-outline" id="btn-probe-sdk" onclick="runSingleProbe('copilot-sdk')" disabled>SDK only</button>
+          <button class="btn btn-outline" id="btn-probe-sdk" onclick="runSingleProbe('copilot-sdk')" disabled>OpenAI SDK only</button>
+          <button class="btn btn-outline" id="btn-probe-foundry-sdk" onclick="runSingleProbe('foundry-sdk')" disabled>Foundry SDK</button>
+          <button class="btn btn-outline" id="btn-probe-foundry-sdk-stream" onclick="runSingleProbe('foundry-sdk-streaming')" disabled>Foundry SDK Stream</button>
         </div>
       </div>
       <div id="probe-results" class="results-area">

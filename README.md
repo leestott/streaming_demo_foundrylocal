@@ -1,32 +1,57 @@
+<!-- banners -->
+<p align="center">
+  <img src="https://img.shields.io/badge/Foundry_Local-Streaming_Validation-0078D4?style=for-the-badge&logo=microsoft&logoColor=white" alt="Foundry Local Streaming Validation">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Microsoft-AI_Foundry-00A4EF?style=for-the-badge&logo=microsoft&logoColor=white" alt="Microsoft AI Foundry">
+  <img src="https://img.shields.io/badge/Foundry_Local-v0.5+-blueviolet?style=for-the-badge" alt="Foundry Local v0.5+">
+</p>
+
 <!-- badges -->
 <p align="center">
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen?logo=node.js&logoColor=white" alt="Node.js ≥ 18"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript&logoColor=white" alt="TypeScript strict"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
   <a href="https://www.npmjs.com/package/openai"><img src="https://img.shields.io/badge/openai--sdk-4.x-blueviolet?logo=openai&logoColor=white" alt="OpenAI SDK 4.x"></a>
+  <a href="https://www.npmjs.com/package/@prathikrao/foundry-local-sdk"><img src="https://img.shields.io/badge/foundry--local--sdk-0.0.12-teal?logo=npm&logoColor=white" alt="Foundry Local SDK"></a>
   <a href="#"><img src="https://img.shields.io/badge/SSE_parser-hand--rolled-orange" alt="Hand-rolled SSE"></a>
   <a href="#"><img src="https://img.shields.io/badge/proxy%2Finterceptor-none-critical" alt="No Proxy"></a>
+  <a href="SECURITY.md"><img src="https://img.shields.io/badge/security-policy-informational?logo=shield" alt="Security Policy"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v1.1.0-yellow" alt="Changelog"></a>
 </p>
 
 <h1 align="center">🔍 Foundry Local Streaming Validation</h1>
 
 <p align="center">
-  Diagnose and reproduce the <strong>Foundry Local v0.5 streaming hang</strong> — where
-  <code>stream:true</code> never produces SSE events while <code>stream:false</code> works fine.<br>
-  Now with <strong>automatic port detection</strong>, <strong>multi-model streaming benchmark</strong>, and a <strong>web-based dashboard</strong>.
+  Diagnose and validate <strong>Foundry Local</strong> OpenAI-compatible streaming endpoints — using raw HTTP, the OpenAI SDK, and the official <strong>Foundry Local SDK</strong>.<br>
+  Features <strong>automatic port detection</strong>, <strong>5 independent probes</strong>, <strong>multi-model benchmark</strong>, and a <strong>web-based dashboard</strong>.
 </p>
 
 ---
 
 ## Overview
 
-This tool validates **Foundry Local**'s OpenAI-compatible `/v1/chat/completions` endpoint using **three independent probes**:
+This tool validates **Foundry Local**'s OpenAI-compatible `/v1/chat/completions` endpoint using **five independent probes** across three integration strategies — raw HTTP, the OpenAI SDK, and the official **[Foundry Local SDK](https://www.npmjs.com/package/@prathikrao/foundry-local-sdk)**:
 
 | # | Probe | Method | What it tests |
 |---|---|---|---|
 | 1 | **Non-streaming** | `fetch` · `stream: false` | Baseline — proves the endpoint is reachable and returns valid JSON |
 | 2 | **Raw streaming** | `fetch` + hand-rolled SSE parser · `stream: true` | Direct SSE test with byte-level TTFB and first-event timing |
 | 3 | **Copilot SDK BYOK** | `openai` npm package · `stream: true` | Reproduces the code path GitHub Copilot BYOK uses for OpenAI-compatible endpoints |
+| 4a | **Foundry SDK** | `@prathikrao/foundry-local-sdk` + `fetch` · `stream: false` | SDK-powered model resolution with HTTP inference (non-streaming) |
+| 4b | **Foundry SDK Stream** | `@prathikrao/foundry-local-sdk` + SSE parser · `stream: true` | SDK-powered model resolution with HTTP streaming inference |
+
+### 🧩 Foundry Local SDK integration
+
+Probes 4a and 4b use the official [`@prathikrao/foundry-local-sdk`](https://www.npmjs.com/package/@prathikrao/foundry-local-sdk) in a **hybrid architecture**:
+
+- **SDK for catalog & model resolution** — the SDK's native FFI accesses the local model catalog directly (via `Microsoft.AI.Foundry.Local.Core.dll`), providing richer metadata than the HTTP API (e.g., aliases, variant mappings, download status)
+- **HTTP for chat completions** — inference requests go through the standard `/v1/chat/completions` endpoint served by the CLI-started Foundry Local service
+
+This hybrid approach is necessary because the SDK's native `ChatClient` operates through its own FFI process and cannot share models loaded by the separately-started Foundry Local CLI service. The SDK catalog, however, works independently and adds value through intelligent model resolution (alias → variant ID mapping, platform-specific normalization).
+
+> **Model ID resolution**: The SDK resolves model identifiers using a 5-strategy cascade: alias lookup → exact variant match → platform normalization (e.g., `cuda-gpu` → `generic-gpu`) → fuzzy base-name matching → prefix match. This means you can use friendly aliases like `phi-4-mini` and the SDK will resolve them to the correct variant ID.
 
 ### 🖥️ Web Dashboard
 
@@ -39,7 +64,7 @@ In addition to the CLI, a **browser-based dashboard** lets you interact with eve
 
 <p align="center">
   <img src="docs/screenshots/02-probes-all-passed.png" alt="Dashboard – All Probes Passed" width="720"><br>
-  <em>Full-page view: all three probes passing with OK status, timing metrics, and streamed token preview</em>
+  <em>Full-page view: all five probes passing with OK status, timing metrics, and streamed token preview</em>
 </p>
 
 <p align="center">
@@ -124,6 +149,7 @@ It produces a summary table and a `benchmark-report.json`:
 |---|---|
 | **Node.js** | ≥ 18 (native `fetch` required) |
 | **Foundry Local** | Running (`foundry service status` should show 🟢) |
+| **Foundry Local SDK** | Installed automatically via `npm install` ([`@prathikrao/foundry-local-sdk`](https://www.npmjs.com/package/@prathikrao/foundry-local-sdk)) |
 
 ### 1. Clone & install
 
@@ -303,6 +329,21 @@ After each run, `report.json` is written to the project root. Structure:
       "timings": { "totalMs": 15000 },
       "chunkCount": 0,
       "error": "FIRST_EVENT_TIMEOUT"
+    },
+    {
+      "probe": "foundry-sdk",
+      "outcome": "OK",
+      "httpStatus": 200,
+      "timings": { "totalMs": 14110, "ttfbMs": 13800 },
+      "payloadHash": "e5f6a7b8..."
+    },
+    {
+      "probe": "foundry-sdk-streaming",
+      "outcome": "OK",
+      "httpStatus": 200,
+      "timings": { "totalMs": 5481, "ttfbMs": 230, "firstEventMs": 520 },
+      "chunkCount": 54,
+      "doneReceived": true
     }
   ]
 }
@@ -366,8 +407,12 @@ The benchmark writes a separate report with results for **every model**:
 non-streaming = OK?
 ├── YES → raw-streaming = OK?
 │   ├── YES → copilot-sdk = OK?
-│   │   ├── YES → 🎉 All working
-│   │   └── NO  → SDK-layer issue
+│   │   ├── YES → foundry-sdk = OK?
+│   │   │   ├── YES → foundry-sdk-streaming = OK?
+│   │   │   │   ├── YES → 🎉 All working
+│   │   │   │   └── NO  → SDK streaming issue (check model resolution)
+│   │   │   └── NO  → SDK model resolution issue (check alias / variant mapping)
+│   │   └── NO  → OpenAI SDK-layer issue
 │   └── NO (NO_FIRST_EVENT) → ⚠️ Foundry Local streaming hang confirmed
 └── NO → Server issue (check URL, model, connectivity)
 ```
@@ -393,10 +438,14 @@ foundry-local-streaming-validation/
     ├── config.ts                         # Env loading (all connection settings optional)
     ├── types.ts                          # Shared type definitions
     ├── report.ts                         # JSON report + console summary
+    ├── types/
+    │   └── foundry-local-sdk.d.ts        # Ambient type declarations for the SDK
+    ├── sdk/
+    │   └── foundry-local.ts              # SDK wrapper: ESM↔CJS bridge, model resolution, catalog
     ├── service/
-    │   └── detect.ts                     # Auto-detect port via `foundry service status`
+    │   └── detect.ts                     # Auto-detect port via `foundry service status` + SDK
     ├── models/
-    │   ├── catalog.ts                    # GET /v1/models + formatting
+    │   ├── catalog.ts                    # GET /v1/models + SDK native catalog + formatting
     │   └── picker.ts                     # Interactive terminal model selector
     ├── sse/
     │   └── parser.ts                     # Hand-rolled SSE parser (async generator)
@@ -406,7 +455,8 @@ foundry-local-streaming-validation/
     ├── probes/
     │   ├── non-streaming.ts              # Probe 1: stream:false baseline
     │   ├── raw-streaming.ts              # Probe 2: fetch + SSE
-    │   └── copilot-sdk-streaming.ts      # Probe 3: OpenAI SDK (Copilot BYOK)
+    │   ├── copilot-sdk-streaming.ts      # Probe 3: OpenAI SDK (Copilot BYOK)
+    │   └── foundry-sdk.ts               # Probes 4a+4b: SDK model resolution + HTTP inference
     ├── benchmark/
     │   ├── index.ts                      # Benchmark entry – test all models → report
     │   ├── runner.ts                     # Per-model streaming/non-streaming test
@@ -414,7 +464,7 @@ foundry-local-streaming-validation/
     └── web/
         ├── server.ts                     # Express 5 API server + SPA host
         └── public/
-            ├── index.html                # Dashboard SPA
+            ├── index.html                # Dashboard SPA (5 probe buttons)
             ├── style.css                 # Dark GitHub-style theme
             └── app.js                    # Client-side API logic
 ```
@@ -438,11 +488,34 @@ flowchart TD
     D --> P1[Probe 1: Non-streaming]
     P1 --> P2[Probe 2: Raw SSE streaming]
     P2 --> P3[Probe 3: OpenAI SDK streaming]
-    P3 --> R[Generate report.json]
+    P3 --> P4a[Probe 4a: Foundry SDK non-streaming]
+    P4a --> P4b[Probe 4b: Foundry SDK streaming]
+    P4b --> R[Generate report.json]
     R --> S[Print console summary]
     S --> E{All OK?}
     E -->|Yes| E1[exit 0]
     E -->|No| E2[exit 1]
+```
+
+### Foundry SDK probe flow
+
+```mermaid
+flowchart TD
+    S1[Start SDK Probe] --> S2[Import SDK via ESM bridge]
+    S2 --> S3[Get FoundryLocalManager singleton]
+    S3 --> S4[Catalog: resolveModel]
+    S4 --> S5{Resolution strategy}
+    S5 -->|Alias| S6["catalog.getModel('phi-4-mini')"]
+    S5 -->|Exact variant| S7[catalog.getModelVariant]
+    S5 -->|Normalize platform| S8["cuda-gpu → generic-gpu"]
+    S5 -->|Fuzzy match| S9[Base-name matching]
+    S5 -->|Prefix match| S10[Alias prefix search]
+    S6 & S7 & S8 & S9 & S10 --> S11[Resolved model metadata]
+    S11 --> S12["HTTP fetch /v1/chat/completions"]
+    S12 --> S13{Streaming?}
+    S13 -->|No| S14[Parse JSON response]
+    S13 -->|Yes| S15[SSE parser + chunk counter]
+    S14 & S15 --> S16[Return ProbeResult]
 ```
 
 ### Benchmark flow
@@ -474,7 +547,9 @@ flowchart LR
     Express -->|POST /api/benchmark| Bench["Benchmark<br>Runner"]
     Detect --> FL["Foundry Local<br>(dynamic port)"]
     Catalog --> FL
+    Catalog --> SDK["Foundry Local<br>SDK (FFI)"]
     Probes --> FL
+    Probes --> SDK
     Bench --> FL
 ```
 
@@ -487,6 +562,10 @@ flowchart LR
 | `npm run build` | Compile TypeScript → `dist/` and copy static web assets |
 | `npm start` | Run all probes via CLI (requires build first) |
 | `npm run dev` | Run CLI via ts-node (no build needed) |
+| `npm run probe:non-streaming` | Run only the non-streaming probe |
+| `npm run probe:raw-streaming` | Run only the raw SSE streaming probe |
+| `npm run probe:copilot-sdk` | Run only the Copilot SDK BYOK probe |
+| `npm run probe:foundry-sdk` | Run only the Foundry Local SDK probes (4a + 4b) |
 | `npm run benchmark` | Run multi-model streaming benchmark |
 | `npm run web` | Start the web dashboard on port 3000 (requires build first) |
 | `npm run web:dev` | Start the web dashboard via ts-node (no build needed) |
@@ -508,6 +587,9 @@ flowchart LR
 | Benchmark shows `STREAM_ONLY_FAIL` | Model doesn't support streaming | Expected for some models — check the report for details |
 | Web dashboard probes fail after restart | Foundry port changed | Dashboard auto-re-detects — click "Detect Service" to refresh |
 | Port 3000 in use | Another server on :3000 | Set `WEB_PORT=3001` in your `.env` or environment |
+| SDK probes fail, others OK | SDK model resolution mismatch | The SDK uses generic variant IDs while the CLI uses platform-specific ones; check the SDK logs for the resolved model ID |
+| `Failed to import foundry-local-sdk` | SDK not installed or native FFI issue | Run `npm install` and ensure the `koffi` native module built successfully |
+| SDK shows more models than HTTP | Normal — SDK reads full local catalog | SDK accesses the native catalog via FFI; HTTP only shows loaded/available models |
 
 ---
 
@@ -520,8 +602,22 @@ flowchart LR
 5. Test against a running Foundry Local instance
 6. Submit a PR
 
+Please read [SECURITY.md](SECURITY.md) before reporting vulnerabilities.
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
+
 ---
 
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for our security policy, vulnerability reporting process, and the security design principles applied in this project.
