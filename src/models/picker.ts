@@ -28,6 +28,13 @@ export async function pickModel(models: FoundryModel[]): Promise<string> {
 
   console.log(formatModelTable(models));
 
+  // Also show a compact numbered list for quick reference
+  console.log("  Available models:");
+  models.forEach((m, i) => {
+    console.log(`    ${i + 1}) ${m.id}`);
+  });
+  console.log();
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -35,7 +42,7 @@ export async function pickModel(models: FoundryModel[]): Promise<string> {
 
   return new Promise<string>((resolve, reject) => {
     const ask = (): void => {
-      rl.question(`  Select a model [1-${models.length}]: `, (answer) => {
+      rl.question(`  Select a model (1-${models.length}) or type model name: `, (answer) => {
         const trimmed = answer.trim();
 
         // Accept a number

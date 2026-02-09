@@ -22,6 +22,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { loadConfig, type AppConfig } from "../config";
 import { detectFoundryService, formatServiceInfo } from "../service/detect";
 import { fetchModelCatalog, type FoundryModel } from "../models/catalog";
+import { resolveModelId } from "../models/resolver";
 import { runNonStreamingProbe } from "../probes/non-streaming";
 import { runRawStreamingProbe } from "../probes/raw-streaming";
 import { runCopilotSdkStreamingProbe } from "../probes/copilot-sdk-streaming";
@@ -30,6 +31,7 @@ import { testNonStreaming, testStreaming } from "../benchmark/runner";
 import type { ProbeResult } from "../types";
 import type { ModelBenchmarkEntry, BenchmarkReport } from "../benchmark/types";
 import { writeFileSync } from "node:fs";
+import { getVersionInfo, type VersionInfo } from "../utils/version";
 
 const app = express();
 app.use(express.json());
@@ -81,10 +83,25 @@ app.get("/api/status", (_req, res) => {
       c.foundryBaseUrl = svc.baseUrl;
     }
 
+    const versions = getVersionInfo("cli");
+
     res.json({
       ...svc,
       configuredBaseUrl: c.foundryBaseUrl,
+      detectedVia: "cli",
+      versions,
     });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// ── API: Version info ────────────────────────────────────
+
+app.get("/api/version", (_req, res) => {
+  try {
+    const versions = getVersionInfo("cli");
+    res.json(versions);
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
@@ -112,7 +129,11 @@ app.post("/api/probes/all", async (req, res) => {
 
     await ensureBaseUrl();
     const c = ensureConfig();
-    c.foundryModel = model;
+    
+    // Resolve model alias to full variant ID
+    const resolvedModel = await resolveModelId(c.foundryBaseUrl, model, c.foundryApiKey, c.requestTimeoutMs);
+    c.foundryModel = resolvedModel;
+    console.log(`[probes/all] Model: ${model}${model !== resolvedModel ? ` → ${resolvedModel}` : ""}`);
 
     const results: ProbeResult[] = [];
 
@@ -173,7 +194,11 @@ app.post("/api/probe/:name", async (req, res) => {
 
     await ensureBaseUrl();
     const c = ensureConfig();
-    c.foundryModel = model;
+    
+    // Resolve model alias to full variant ID
+    const resolvedModel = await resolveModelId(c.foundryBaseUrl, model, c.foundryApiKey, c.requestTimeoutMs);
+    c.foundryModel = resolvedModel;
+    console.log(`[probe/${req.params.name}] Model: ${model}${model !== resolvedModel ? ` → ${resolvedModel}` : ""}`);
 
     let result: ProbeResult;
     const name = req.params.name;

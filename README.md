@@ -20,13 +20,15 @@
 
 ## Overview
 
-This tool validates **Foundry Local**'s OpenAI-compatible `/v1/chat/completions` endpoint using **three independent probes**:
+This tool validates **Foundry Local**'s OpenAI-compatible `/v1/chat/completions` endpoint using **five independent probes**:
 
 | # | Probe | Method | What it tests |
 |---|---|---|---|
 | 1 | **Non-streaming** | `fetch` · `stream: false` | Baseline — proves the endpoint is reachable and returns valid JSON |
 | 2 | **Raw streaming** | `fetch` + hand-rolled SSE parser · `stream: true` | Direct SSE test with byte-level TTFB and first-event timing |
 | 3 | **Copilot SDK BYOK** | `openai` npm package · `stream: true` | Reproduces the code path GitHub Copilot BYOK uses for OpenAI-compatible endpoints |
+| 4 | **Foundry SDK** | `@prathikrao/foundry-local-sdk` · non-streaming | Tests the official Foundry Local SDK |
+| 5 | **Foundry SDK Streaming** | `@prathikrao/foundry-local-sdk` · streaming | Tests streaming via the Foundry SDK |
 
 ### 🖥️ Web Dashboard
 
@@ -79,14 +81,33 @@ If `FOUNDRY_MODEL` is not set in `.env`, the tool **automatically queries** the 
 ```
   #   Model ID                          Owner
   ────────────────────────────────────────────────────────────
-    1  phi-4-mini                        Microsoft
-    2  phi-4                             Microsoft
-    3  mistral-7b-instruct               Mistral
+    1  Phi-4-cuda-gpu:1                  Microsoft
+    2  Phi-4-mini-instruct-cuda-gpu:5    Microsoft
+    3  qwen2.5-0.5b-instruct-cuda-gpu:4  Microsoft
 
-  Select a model [1-3]: _
+  Available models:
+    1) Phi-4-cuda-gpu:1
+    2) Phi-4-mini-instruct-cuda-gpu:5
+    3) qwen2.5-0.5b-instruct-cuda-gpu:4
+
+  Select a model (1-3) or type model name: _
 ```
 
-You can also type a model name directly. In non-interactive mode (CI/piped), the first available model is auto-selected.
+You can also type a model name directly or use an alias (e.g., `phi-4-mini`). The tool automatically resolves aliases to full variant IDs. In non-interactive mode (CI/piped), the first available model is auto-selected.
+
+### 📋 Version information
+
+Both the CLI and web dashboard display version information at startup:
+
+```
+  Version Information:
+  App version        : 1.0.0
+  Node.js            : 24.13.0
+  Foundry CLI        : 0.8.119
+  Foundry SDK        : 0.0.12
+  OpenAI SDK         : 4.104.0
+  Detection method   : CLI
+```
 
 ### 🏁 Multi-model streaming benchmark
 
@@ -383,6 +404,9 @@ foundry-local-streaming-validation/
 ├── package.json
 ├── tsconfig.json                         # strict: true
 ├── README.md
+├── CONTRIBUTING.md                       # Contribution guidelines
+├── SECURITY.md                           # Security policy
+├── LICENSE                               # MIT License
 ├── docs/
 │   └── screenshots/                      # Playwright-captured screenshots
 ├── scripts/
@@ -397,16 +421,19 @@ foundry-local-streaming-validation/
     │   └── detect.ts                     # Auto-detect port via `foundry service status`
     ├── models/
     │   ├── catalog.ts                    # GET /v1/models + formatting
-    │   └── picker.ts                     # Interactive terminal model selector
+    │   ├── picker.ts                     # Interactive terminal model selector
+    │   └── resolver.ts                   # Model alias → full variant ID resolver
     ├── sse/
     │   └── parser.ts                     # Hand-rolled SSE parser (async generator)
     ├── utils/
     │   ├── hash.ts                       # SHA-256 payload hashing
-    │   └── timing.ts                     # Timer with TTFB + first-event marks
+    │   ├── timing.ts                     # Timer with TTFB + first-event marks
+    │   └── version.ts                    # Version info collector (app, CLI, SDK)
     ├── probes/
     │   ├── non-streaming.ts              # Probe 1: stream:false baseline
     │   ├── raw-streaming.ts              # Probe 2: fetch + SSE
-    │   └── copilot-sdk-streaming.ts      # Probe 3: OpenAI SDK (Copilot BYOK)
+    │   ├── copilot-sdk-streaming.ts      # Probe 3: OpenAI SDK (Copilot BYOK)
+    │   └── foundry-sdk.ts                # Probes 4 & 5: Foundry SDK (streaming & non)
     ├── benchmark/
     │   ├── index.ts                      # Benchmark entry – test all models → report
     │   ├── runner.ts                     # Per-model streaming/non-streaming test
@@ -438,7 +465,9 @@ flowchart TD
     D --> P1[Probe 1: Non-streaming]
     P1 --> P2[Probe 2: Raw SSE streaming]
     P2 --> P3[Probe 3: OpenAI SDK streaming]
-    P3 --> R[Generate report.json]
+    P3 --> P4[Probe 4: Foundry SDK]
+    P4 --> P5[Probe 5: Foundry SDK streaming]
+    P5 --> R[Generate report.json]
     R --> S[Print console summary]
     S --> E{All OK?}
     E -->|Yes| E1[exit 0]
@@ -513,12 +542,18 @@ flowchart LR
 
 ## Contributing
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
 1. Fork & clone
 2. `npm install`
 3. Make changes in `src/`
 4. `npm run build` — must compile with zero errors (strict mode)
 5. Test against a running Foundry Local instance
 6. Submit a PR
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for our security policy and how to report vulnerabilities.
 
 ---
 

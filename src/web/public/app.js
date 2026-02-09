@@ -57,6 +57,11 @@ async function detectService() {
           <span class="label">Status</span>
           <span class="status-badge ${statusClass}">${statusText}</span>
         </div>
+        ${data.detectedVia ? `
+        <div class="info-item">
+          <span class="label">Detected Via</span>
+          <span class="value">${escapeHtml(data.detectedVia.toUpperCase())}</span>
+        </div>` : ''}
         ${data.port ? `
         <div class="info-item">
           <span class="label">Port</span>
@@ -74,6 +79,11 @@ async function detectService() {
         </div>` : ''}
       </div>
     `;
+
+    // Update version bar with info from status response
+    if (data.versions) {
+      renderVersionBar(data.versions);
+    }
 
     if (data.running) {
       serviceReady = true;
@@ -358,3 +368,54 @@ function enableAllButtons() {
 window.addEventListener('DOMContentLoaded', () => {
   detectService();
 });
+
+// ── Version Info ─────────────────────────────────────────
+
+function renderVersionBar(versions) {
+  const el = $('version-bar');
+  if (!versions) {
+    el.innerHTML = '<span class="version-loading">Version info unavailable</span>';
+    return;
+  }
+
+  const method = versions.detectionMethod || 'cli';
+  const methodLabel = method === 'sdk' ? '🔧 SDK' : '💻 CLI';
+  const methodClass = method === 'sdk' ? 'method-sdk' : 'method-cli';
+
+  el.innerHTML = `
+    <div class="version-items">
+      <span class="version-item">
+        <span class="version-label">Detection</span>
+        <span class="version-value version-method ${methodClass}">${methodLabel}</span>
+      </span>
+      <span class="version-sep">|</span>
+      <span class="version-item">
+        <span class="version-label">App</span>
+        <span class="version-value">v${escapeHtml(versions.app || '?')}</span>
+      </span>
+      ${versions.foundryCli ? `
+      <span class="version-sep">|</span>
+      <span class="version-item">
+        <span class="version-label">Foundry CLI</span>
+        <span class="version-value">v${escapeHtml(versions.foundryCli)}</span>
+      </span>` : ''}
+      ${versions.foundrySDK ? `
+      <span class="version-sep">|</span>
+      <span class="version-item">
+        <span class="version-label">Foundry SDK</span>
+        <span class="version-value">v${escapeHtml(versions.foundrySDK)}</span>
+      </span>` : ''}
+      ${versions.openaiSDK ? `
+      <span class="version-sep">|</span>
+      <span class="version-item">
+        <span class="version-label">OpenAI SDK</span>
+        <span class="version-value">v${escapeHtml(versions.openaiSDK)}</span>
+      </span>` : ''}
+      <span class="version-sep">|</span>
+      <span class="version-item">
+        <span class="version-label">Node.js</span>
+        <span class="version-value">v${escapeHtml(versions.node || '?')}</span>
+      </span>
+    </div>
+  `;
+}

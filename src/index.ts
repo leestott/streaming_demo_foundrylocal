@@ -13,14 +13,22 @@ import { loadConfig } from "./config";
 import { detectFoundryService, formatServiceInfo } from "./service/detect";
 import { fetchModelCatalog } from "./models/catalog";
 import { pickModel } from "./models/picker";
+import { resolveModelId } from "./models/resolver";
 import { runNonStreamingProbe } from "./probes/non-streaming";
 import { runRawStreamingProbe } from "./probes/raw-streaming";
 import { runCopilotSdkStreamingProbe } from "./probes/copilot-sdk-streaming";
 import { writeReport, printSummary } from "./report";
+import { getVersionInfo, formatVersionInfo } from "./utils/version";
 import type { ProbeResult } from "./types";
 
 async function main(): Promise<void> {
   console.log("─── Foundry Local Streaming Validation ───\n");
+
+  // ── Version info ────────────────────────────────────────
+  const versionInfo = getVersionInfo("cli");
+  console.log("  Version Information:");
+  console.log(formatVersionInfo(versionInfo));
+  console.log();
 
   const cfg = loadConfig();
 
@@ -61,6 +69,15 @@ async function main(): Promise<void> {
       process.exit(1);
     }
   }
+
+  // ── Resolve model alias to full variant ID ─────────────────
+  const originalModel = cfg.foundryModel;
+  cfg.foundryModel = await resolveModelId(
+    cfg.foundryBaseUrl,
+    cfg.foundryModel,
+    cfg.foundryApiKey,
+    cfg.requestTimeoutMs
+  );
 
   console.log(`  Base URL           : ${cfg.foundryBaseUrl}`);
   console.log(`  Model              : ${cfg.foundryModel}`);

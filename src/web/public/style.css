@@ -49,6 +49,72 @@ header {
   font-size: 0.95rem;
 }
 
+/* ─── Version Bar ─── */
+.version-bar {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.version-loading {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.version-items {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.version-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.version-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.version-value {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.version-method {
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+}
+
+.version-method.method-sdk {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+.version-method.method-cli {
+  background: rgba(88, 166, 255, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+}
+
+.version-sep {
+  color: var(--border);
+  font-size: 0.8rem;
+}
+
 /* ─── Main ─── */
 main {
   max-width: 1100px;
