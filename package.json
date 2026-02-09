@@ -1,0 +1,42 @@
+{
+  "name": "foundry-local-streaming-validation",
+  "version": "1.0.0",
+  "description": "Validates Foundry Local OpenAI-compatible streaming against /v1/chat/completions using raw SSE and OpenAI SDK (Copilot BYOK-style)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && node -e \"const fs=require('fs');const p=require('path');const s='src/web/public';const d='dist/web/public';fs.mkdirSync(d,{recursive:true});fs.readdirSync(s).forEach(f=>fs.copyFileSync(p.join(s,f),p.join(d,f)));console.log('Copied static assets to dist/web/public')\"",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "probe:non-streaming": "node dist/probes/non-streaming.js",
+    "probe:raw-streaming": "node dist/probes/raw-streaming.js",
+    "probe:copilot-sdk": "node dist/probes/copilot-sdk-streaming.js",
+    "benchmark": "node dist/benchmark/index.js",
+    "web": "node dist/web/server.js",
+    "web:dev": "ts-node src/web/server.ts",
+    "clean": "rimraf dist report.json benchmark-report.json"
+  },
+  "keywords": [
+    "foundry-local",
+    "openai",
+    "streaming",
+    "sse",
+    "diagnostics"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@prathikrao/foundry-local-sdk": "^0.0.12",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "openai": "^4.73.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.11.0",
+    "rimraf": "^5.0.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,25 @@
+node_modules/
+dist/
+report.json
+benchmark-report.json
+.env
+*.tgz
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Coverage & test output
+coverage/
+.nyc_output/
+
+# Playwright MCP temp files
+.playwright-mcp/

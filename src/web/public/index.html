@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Foundry Local Streaming Validation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <h1>🔍 Foundry Local Streaming Validation</h1>
+      <p class="subtitle">Diagnose and validate OpenAI-compatible streaming with Foundry Local</p>
+    </div>
+  </header>
+
+  <main>
+    <!-- Service Status -->
+    <section class="card" id="service-section">
+      <div class="card-header">
+        <h2>🌐 Service Status</h2>
+        <button class="btn btn-secondary" id="btn-detect" onclick="detectService()">Detect Service</button>
+      </div>
+      <div id="service-status" class="status-area">
+        <p class="muted">Click "Detect Service" to check Foundry Local status...</p>
+      </div>
+    </section>
+
+    <!-- Model Selection -->
+    <section class="card" id="model-section">
+      <div class="card-header">
+        <h2>📋 Model Selection</h2>
+        <button class="btn btn-secondary" id="btn-refresh-models" onclick="loadModels()">Refresh Models</button>
+      </div>
+      <div id="model-list" class="model-area">
+        <p class="muted">Detect the service first to load available models...</p>
+      </div>
+    </section>
+
+    <!-- Probe Runner -->
+    <section class="card" id="probe-section">
+      <div class="card-header">
+        <h2>🚀 Streaming Probes</h2>
+      </div>
+      <div class="probe-controls">
+        <div class="selected-model" id="selected-model-display">
+          <span class="label">Selected model:</span>
+          <span class="value" id="current-model">None</span>
+        </div>
+        <div class="button-group">
+          <button class="btn btn-primary" id="btn-run-all" onclick="runAllProbes()" disabled>Run All Probes</button>
+          <button class="btn btn-outline" id="btn-probe-ns" onclick="runSingleProbe('non-streaming')" disabled>Non-streaming only</button>
+          <button class="btn btn-outline" id="btn-probe-raw" onclick="runSingleProbe('raw-streaming')" disabled>Raw SSE only</button>
+          <button class="btn btn-outline" id="btn-probe-sdk" onclick="runSingleProbe('copilot-sdk')" disabled>SDK only</button>
+        </div>
+      </div>
+      <div id="probe-results" class="results-area">
+        <p class="muted">Select a model and run probes to see results...</p>
+      </div>
+    </section>
+
+    <!-- Benchmark -->
+    <section class="card" id="benchmark-section">
+      <div class="card-header">
+        <h2>🏁 Multi-Model Benchmark</h2>
+        <button class="btn btn-primary" id="btn-benchmark" onclick="runBenchmark()" disabled>Run Benchmark</button>
+      </div>
+      <div id="benchmark-results" class="results-area">
+        <p class="muted">Benchmark tests every model in the catalog for streaming support...</p>
+      </div>
+    </section>
+
+    <!-- Report Viewer -->
+    <section class="card" id="report-section">
+      <div class="card-header">
+        <h2>📊 Reports</h2>
+        <div class="button-group">
+          <button class="btn btn-secondary" onclick="loadReport()">Load Probe Report</button>
+          <button class="btn btn-secondary" onclick="loadBenchmarkReport()">Load Benchmark Report</button>
+        </div>
+      </div>
+      <div id="report-content" class="results-area">
+        <p class="muted">Run probes or benchmark first, then load reports here...</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Foundry Local Streaming Validation &middot; TypeScript &middot; Node.js ≥ 18 &middot; MIT License</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
