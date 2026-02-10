@@ -24,14 +24,14 @@ Streaming is essential for Small Language Models because it transforms limited c
 
 ---
 
-## 1. Hides Latency on Slow or Edge Hardware
+### 1. Hides Latency on Slow or Edge Hardware
 
 SLMs often run on CPUs, NPUs, or mobile devices, where token generation is slower than cloud LLMs.  
 Streaming masks this by showing output immediately, even while the model is still thinking.
 
 ---
 
-## 2. Enables Early Termination (Huge for Efficiency)
+### 2. Enables Early Termination (Huge for Efficiency)
 
 Users often get what they need in the first few tokens.  
 Streaming allows early stopping, saving:
@@ -44,14 +44,14 @@ Perfect for on‑device workloads.
 
 ---
 
-## 3. Makes SLMs Feel “Instant” and Conversational
+### 3. Makes SLMs Feel “Instant” and Conversational
 
 Responsiveness matters more than raw speed.  
 Streaming gives the perception of intelligence and fluidity, even when the model is small.
 
 ---
 
-## 4. Supports Real-Time Interaction and Control
+### 4. Supports Real-Time Interaction and Control
 
 Developers can:
 
@@ -63,7 +63,7 @@ This is critical for copilots, agents, and embedded apps.
 
 ---
 
-## 5. Improves Safety and Guardrails
+### 5. Improves Safety and Guardrails
 
 Streaming enables:
 
