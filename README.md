@@ -18,7 +18,58 @@
 
 ---
 
-## Overview
+## Why Streaming Matters for SLMs
+
+Streaming is essential for Small Language Models because it transforms limited compute into a great user experience. In an SLM context, streaming isn’t a luxury — it’s how you make the model feel fast, capable, and interactive despite running on constrained hardware.
+
+---
+
+## 1. Hides Latency on Slow or Edge Hardware
+
+SLMs often run on CPUs, NPUs, or mobile devices, where token generation is slower than cloud LLMs.  
+Streaming masks this by showing output immediately, even while the model is still thinking.
+
+---
+
+## 2. Enables Early Termination (Huge for Efficiency)
+
+Users often get what they need in the first few tokens.  
+Streaming allows early stopping, saving:
+
+- battery  
+- compute  
+- memory  
+
+Perfect for on‑device workloads.
+
+---
+
+## 3. Makes SLMs Feel “Instant” and Conversational
+
+Responsiveness matters more than raw speed.  
+Streaming gives the perception of intelligence and fluidity, even when the model is small.
+
+---
+
+## 4. Supports Real-Time Interaction and Control
+
+Developers can:
+
+- interrupt generation  
+- steer the model mid‑response  
+- update UI incrementally  
+
+This is critical for copilots, agents, and embedded apps.
+
+---
+
+## 5. Improves Safety and Guardrails
+
+Streaming enables:
+
+- real‑time moderation  
+- stopping unsafe drift early  
+- adaptive correction
 
 This tool validates **Foundry Local**'s OpenAI-compatible `/v1/chat/completions` endpoint using **five independent probes**:
 
